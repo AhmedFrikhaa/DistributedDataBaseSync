@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 import mysql.connector
-from HO import handle_sales_data
+from HO import run as run
 
 class HOInterface(tk.Frame):
     def __init__(self, master=None):
@@ -25,34 +25,66 @@ class HOInterface(tk.Frame):
         self.treeview.heading('quantity', text='quantity')
         self.treeview.heading('sale_date', text='sale_date')
 
+        self.add_btn = ttk.Button(self, text="Refresh", command=self.refresh)
+        self.add_btn.pack()
+
         self.treeview.pack(pady=10)
 
 
         # Connect to the BO database
-        HO_db = mysql.connector.connect(
+        self.HO_db = mysql.connector.connect(
             host="localhost",
             user="root",
             password="",
             database="ho_sales"
         )
 
-        cursor = HO_db.cursor()
+        self.cursor = self.HO_db.cursor()
         query = "SELECT * FROM sales ORDER BY sale_date DESC LIMIT 10"
-        cursor.execute(query)
-        rows = cursor.fetchall()
-        cursor.close()
-
+        self.cursor.execute(query)
+        rows = self.cursor.fetchall()
 
         # Populate the table with the sales data
         for row in rows:
             self.treeview.insert("", tk.END, values=row)
 
+        self.cursor.close()
         # Close the database connection
-        HO_db.close()
+        self.HO_db.close()
+    def mainloop(self, run):
+        run()
+        self.master.mainloop()
+
+    def refresh(self):
+        for item in self.treeview.get_children():
+            self.treeview.delete(item)
+
+        self.HO_db = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="",
+            database="ho_sales"
+        )
+
+        self.cursor = self.HO_db.cursor()
+        query = "SELECT * FROM sales ORDER BY sale_date DESC LIMIT 10"
+        self.cursor.execute(query)
+        rows = self.cursor.fetchall()
+
+        # Populate the table with the sales data
+        for row in rows:
+            self.treeview.insert("", tk.END, values=row)
+
+        self.cursor.close()
+        # Close the database connection
+        self.HO_db.close()
+
+
+
 
 
 
 if __name__ == '__main__':
     root = tk.Tk()
     app = HOInterface(master=root)
-    app.mainloop()
+    app.mainloop(run)

@@ -34,11 +34,11 @@ def send_sales_data():
     channel.queue_bind(exchange=exchange_name, queue=queue_name, routing_key=routing_key)
     # Fetch the latest sales data from the BO database where isSync is False
     cursor = bo2_db.cursor()
-    query = "SELECT * FROM sales  ORDER BY sale_date DESC LIMIT 10"
+    query = "SELECT * FROM sales WHERE synced=0 ORDER BY sale_date "
     cursor.execute(query)
     rows = cursor.fetchall()
     if rows:
-        rows.append("1")
+        rows.append("2")
         cursor.close()
 
         # Convert the rows to a JSON string and send it to the HO database

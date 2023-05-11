@@ -50,8 +50,21 @@ class BO1Interface(tk.Frame):
         self.date_entry = ttk.Entry(self.add_frame)
         self.date_entry.grid(row=1, column=1, padx=5, pady=5)
 
+        self.quantity_label = ttk.Label(self.add_frame, text="Quantity:")
+        self.quantity_label.grid(row=2, column=0, padx=5, pady=5)
+
+        self.quantity_entry = ttk.Entry(self.add_frame)
+        self.quantity_entry.grid(row=2, column=1, padx=5, pady=5)
+
+        self.price_label = ttk.Label(self.add_frame, text="Price:")
+        self.price_label.grid(row=3, column=0, padx=5, pady=5)
+
+        self.price_entry = ttk.Entry(self.add_frame)
+        self.price_entry.grid(row=3, column=1, padx=5, pady=5)
+
         self.add_btn = ttk.Button(self.add_frame, text="Add Sale", command=self.add_sale)
-        self.add_btn.grid(row=2, column=1, padx=5, pady=5)
+        self.add_btn.grid(row=4, column=1, padx=5, pady=5)
+
 
         # Connect to the BO database
         bo1_db = mysql.connector.connect(
@@ -78,12 +91,35 @@ class BO1Interface(tk.Frame):
     def send_sales_data(self):
         # Call the send_sales_data() function from BO1_server.py
         send_sales_data()
+        bo1_db = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="",
+            database="bo1_sales"
+        )
+
+        # Fetch the all sales data from the BO database
+        cursor = bo1_db.cursor()
+
+        for item in self.treeview.get_children():
+            self.treeview.delete(item)
+
+        query = "SELECT * FROM sales ORDER BY sale_date DESC"
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        cursor.close()
+
+        # Populate the table with the sales data
+        for row in rows:
+            self.treeview.insert("", tk.END, values=row)
         print('Sales data sent from BO1')
 
     def add_sale(self):
         # Get the product and date from the form
         product = self.product_entry.get()
         date = self.date_entry.get()
+        quantity = self.quantity_entry.get()
+        price = self.price_entry.get()
 
         # Connect to the BO database
         bo1_db = mysql.connector.connect(
@@ -95,17 +131,31 @@ class BO1Interface(tk.Frame):
 
         # Insert the new sale into the database
         cursor = bo1_db.cursor()
-        query = "INSERT INTO sales (product_name, sale_date, synced) VALUES (%s, %s, %s)"
-        values = (product, date, 0)
+        query = "INSERT INTO sales (product_name, sale_date,price,quantity, synced) VALUES (%s, %s, %s,%s,%s)"
+        values = (product, date, price, quantity, 0)
         cursor.execute(query, values)
         bo1_db.commit()
-        cursor.close()
 
         # Clear the form and refresh the table
         self.product_entry.delete(0, tk.END)
         self.date_entry.delete(0, tk.END)
+        self.price_entry.delete(0, tk.END)
+        self.quantity_entry.delete(0, tk.END)
+
+        for item in self.treeview.get_children():
+            self.treeview.delete(item)
+
+        query = "SELECT * FROM sales ORDER BY sale_date DESC"
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        cursor.close()
+
+        # Populate the table with the sales data
+        for row in rows:
+            self.treeview.insert("", tk.END, values=row)
 
         print('Sale added to BO1 database')
+        cursor.close()
 
 
 if __name__ == '__main__':
